@@ -1,0 +1,174 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+train_df = pd.read_csv(r"C:\Users\hp victus\Downloads\fashion-mnist_train.csv\fashion-mnist_train.csv")
+test_df = pd.read_csv(r"C:\Users\hp victus\Downloads\fashion-mnist_test.csv (2)\fashion-mnist_test.csv")
+
+train_df.shape
+
+test_df.shape
+
+train_df.describe()
+train_df.label.unique()
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat','Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+x_train = train_df.iloc[:,1:].to_numpy()
+x_train = x_train.reshape([-1,28,28,1])
+x_train = x_train / 255
+y_train = train_df.iloc[:,0].to_numpy()
+x_test = test_df.iloc[:,1:].to_numpy()
+x_test = x_test.reshape([-1,28,28,1])
+x_test = x_test / 255
+y_test = test_df.iloc[:,0].to_numpy()
+plt.figure(figsize=(10,10))
+for i in range(25):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(x_train[i], cmap=plt.cm.binary)
+    plt.xlabel(class_names[y_train[i]])
+plt.show()
+
+from keras.models import Sequential
+from keras.layers import Dense,Conv2D,Flatten,MaxPooling2D,Dropout
+model = Sequential()
+
+model.add(Conv2D(filters=64,kernel_size=(3,3),input_shape=(28,28,1),activation='relu'))
+model.add(MaxPooling2D(pool_size = (2,2)))
+model.add(Dropout(rate=0.3))
+model.add(Flatten())
+model.add(Dense(units=32, activation='relu'))
+model.add(Dense(units=10, activation='sigmoid'))
+model.compile(loss='sparse_categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+model.summary()
+model.fit(x_train,y_train,epochs=50,batch_size=1200,validation_split=0.05)
+evaluation = model.evaluate(x_test,y_test)
+print(f"Accuracy: {evaluation[1]}")
+y_probas = model.predict(x_test)
+y_pred = y_probas.argmax(axis=-1)
+y_pred
+
+plt.figure(figsize=(10,10),)
+for i in range(25):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(x_test[i], cmap=plt.cm.binary)
+    plt.title(f"Pred:{class_names[y_pred[i]]}")
+plt.show()
+from sklearn.metrics import classification_report
+num_classes = 10
+class_names = ["class {}".format(i) for i in range(num_classes)]
+cr = classification_report(y_test, y_pred, target_names=class_names)
+print(cr)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+Inshort Theory
+
+हा practical वापरून मधील कपड्यांचे images classify करण्यासाठी केला जातो.
+
+Dataset मध्ये 28×28 grayscale images असतात.
+Images preprocess करून CNN model ला दिले जातात.
+Convolution layer image मधील features detect करते.
+MaxPooling layer image size कमी करते.
+Dropout overfitting कमी करतो.
+Flatten layer 2D data ला 1D मध्ये convert करते.
+Dense layer final classification करते.
+Output layer 10 classes predict करते.
+Model training नंतर testing accuracy आणि classification report मिळते.
+
+
+
+1. What is CNN?
+CNN is a deep learning algorithm used for image processing and classification.
+
+2. What is Fashion MNIST?
+Fashion MNIST is a dataset of clothing images used for image classification.
+
+3. Why do we normalize images?
+Normalization converts pixel values from 0–255 to 0–1 for faster training.
+
+4. What is the use of Conv2D layer?
+Conv2D extracts important features from images.
+
+5. What is ReLU?
+ReLU is an activation function that removes negative values.
+
+6. What is MaxPooling?
+MaxPooling reduces image size and keeps important features.
+
+7. What is Dropout?
+Dropout reduces overfitting by disabling some neurons during training.
+
+8. What is Flatten layer?
+Flatten converts 2D data into 1D vector.
+
+9. What is Dense layer?
+Dense layer performs classification using learned features.
+
+10. Why is Softmax/Sigmoid used in output layer?
+It gives probability for each class.
+
+11. What is an Epoch?
+One complete training cycle through the dataset.
+
+12. What is Batch Size?
+Number of samples processed at one time during training.
+
+13. Which optimizer is used?
+Adam optimizer is used.
+
+14. What is accuracy?
+Accuracy shows correct predictions percentage.
+
+15. What is overfitting?
+When model performs well on training data but poorly on test data.
+
+16. What is image classification?
+Identifying the category of an image.
+
+17. How many classes are in Fashion MNIST?
+There are 10 classes.
+
+18. What is the input image size?
+28 × 28 pixels.
+
+19. What is deep learning?
+Deep learning is a subset of machine learning using neural networks.
+
+20. What is the output of this project?
+Prediction of clothing category from image.
+""""
