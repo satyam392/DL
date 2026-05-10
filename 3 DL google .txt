@@ -1,0 +1,227 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+train_df = pd.read_csv(r"C:\Users\hp victus\Downloads\Google_Stock_Price_Train.csv")
+train_df.info()
+
+test_df = pd.read_csv(r"C:\Users\hp victus\Downloads\Google_Stock_Price_Test.csv")
+test_df.info()
+
+train = train_df.loc[:,["Open"]].values
+train.shape
+
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+
+train_scaled = scaler.fit_transform(train)
+plt.plot(train_scaled)
+plt.ylabel("Standardized Values")
+plt.xlabel("Time->")
+plt.show()
+
+x_train = []
+y_train = []
+time = 60
+for i in range(60,train_scaled.shape[0]):
+    x_train.append(train_scaled[i-60:i,0])
+    y_train.append(train_scaled[i,0])
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+
+x_train.shape,y_train.shape
+
+x_train = np.reshape(x_train,newshape=(x_train.shape[0],x_train.shape[1],1))
+x_train.shape
+
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN,Dropout
+
+model = Sequential()
+
+model.add(SimpleRNN(units=50,activation = "tanh", return_sequences = True, input_shape = (x_train.shape[1], 1)))
+model.add(Dropout(0.2))
+
+model.add(SimpleRNN(units=50,activation = "tanh", return_sequences = True))
+model.add(Dropout(0.2))
+
+model.add(SimpleRNN(units=50,activation = "tanh", return_sequences = True))
+model.add(Dropout(0.2))
+
+model.add(SimpleRNN(units=50))
+model.add(Dropout(0.2))
+
+model.add(Dense(units=1))
+
+model.compile(optimizer='adam',loss='mse')
+model.summary()
+
+model.fit(x_train,y_train,epochs=100,batch_size=30,validation_split=0.05)
+
+data = pd.concat((train_df['Open'],test_df['Open']),axis=0)
+
+test_input = data.iloc[len(data) - len(test_df) - time : ].values
+test_input.shape
+
+test_input = test_input.reshape(-1,1)
+test_input.shape
+
+
+test_scaled = scaler.transform(test_input)
+
+x_test = []
+for i in range(time,test_scaled.shape[0]):
+    x_test.append(test_scaled[i - time: i,0 ])
+x_test = np.array(x_test)
+x_test.shape
+
+x_test = np.reshape(x_test,newshape=(x_test.shape[0],x_test.shape[1],1))
+x_test.shape
+
+y_test = test_df.loc[:,"Open"].values
+
+
+y_pred = model.predict(x_test)
+
+y_pred = scaler.inverse_transform(y_pred)
+
+output = model.evaluate(x=x_test,y=y_test)
+
+
+plt.plot(y_test, color = 'red', label = 'Real price')
+plt.plot(y_pred, color = 'blue', label = 'Predicted price')
+
+plt.title('Google Stock price prediction')
+plt.xlabel('Time')
+plt.ylabel('Price')
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+1. Data Loading
+pandas वापरून Google stock data (train आणि test) load केला आहे.
+फक्त Open price column घेतला आहे.
+🔹 2. Data Preprocessing
+MinMaxScaler वापरून data 0 ते 1 range मध्ये scale केला आहे.
+यामुळे neural network ला learning सोपं होतं.
+🔹 3. Time Series Dataset Creation
+मागचे 60 days (time = 60) वापरून पुढचा price predict केला आहे.
+म्हणजे:
+X_train = previous 60 days data
+Y_train = next day price
+🔹 4. Reshaping
+
+RNN ला 3D input लागतं:
+
+(samples, timesteps, features)
+🔹 5. Model (SimpleRNN)
+4 SimpleRNN layers + Dropout (overfitting avoid करण्यासाठी)
+Last layer = Dense(1) → single price output
+🔹 6. Compilation & Training
+optimizer = Adam
+loss = MSE (Mean Squared Error)
+model 100 epochs train केला आहे
+🔹 7. Testing Data Preparation
+train + test combine करून last 60 days घेतले आहेत
+same scaling applied
+🔹 8. Prediction
+trained model वापरून stock price predict केला आहे
+output inverse transform करून actual price मध्ये convert केला आहे
+🔹 9. Evaluation & Visualization
+real vs predicted price compare केला आहे graph मध्ये
+red = actual price, blue = predicted price
+
+
+
+
+1. What is the aim of this project?
+
+Ans: To predict Google stock prices using past data with a Recurrent Neural Network (RNN).
+
+🔹 2. Why do we use RNN here?
+
+Ans: Because RNN is suitable for sequential/time-series data where previous values affect future values.
+
+🔹 3. What dataset is used?
+
+Ans: Google Stock Price dataset (Train and Test data with Open prices).
+
+🔹 4. What is time series data?
+
+Ans: Data collected over time at regular intervals (e.g., stock prices, weather data).
+
+🔹 5. Why do we scale the data?
+
+Ans: To normalize values between 0 and 1 for better model performance and faster training.
+
+🔹 6. What is MinMaxScaler?
+
+Ans: A preprocessing technique that scales data within a fixed range (0 to 1).
+
+🔹 7. Why do we use 60 time steps?
+
+Ans: To use past 60 days data to predict the next day stock price.
+
+🔹 8. What is input shape of RNN?
+
+Ans: (timesteps, features) → here it is (60, 1).
+
+🔹 9. What is SimpleRNN?
+
+Ans: A basic recurrent neural network layer that processes sequential data.
+
+🔹 10. Why is return_sequences=True used?
+
+Ans: To pass output of one RNN layer to the next RNN layer.
+
+🔹 11. What is Dropout?
+
+Ans: A regularization technique to prevent overfitting by randomly ignoring neurons during training.
+
+🔹 12. Why is Dense layer used at last?
+
+Ans: To give final output (predicted stock price).
+
+🔹 13. What loss function is used?
+
+Ans: Mean Squared Error (MSE).
+
+🔹 14. What optimizer is used?
+
+Ans: Adam optimizer.
+
+🔹 15. What is prediction output?
+
+Ans: Future Google stock price based on past 60 days data.
+
+🔹 16. What is inverse transform?
+
+Ans: Converting scaled values back to original stock price scale.
+
+🔹 17. What is the difference between train and test data?
+
+Ans: Train data is used for learning, test data is used for evaluation
+"""
